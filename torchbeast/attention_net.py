@@ -36,9 +36,7 @@ class AttentionNet(nn.Module):
         self.c_v, self.c_k, self.c_s, self.num_queries = c_v, c_k, c_s, num_queries
         self.num_keys = c_k + c_s
         self.num_values = c_v + c_s
-        
-        self.attention_mix = nn.Conv2d(6, 4, kernel_size=(1,1), stride=1)
-        
+                
         # This is a function of the CNN hp and the input image size.
         self.height, self.width = 27, 20
 
@@ -79,10 +77,7 @@ class AttentionNet(nn.Module):
 
         # 1 (a). Vision.
         # --------------
-        if len(inputs['Me'].size()) == 3:
-            inputs['Me'] = inputs['Me'][np.newaxis, np.newaxis, ...]
-            inputs['Enemies'] = inputs['Enemies'][np.newaxis, np.newaxis, ...]
-            
+
         # [T, B, C, H, W].
         X = inputs["frame"]
         T, B, *_ = X.size()
@@ -100,7 +95,6 @@ class AttentionNet(nn.Module):
 
         # 2. Prepare all inputs to operate over the T steps.
         # --------------------------------------------------
-        core_output_list = []
         core_output_list = []
         core_state = splice_core_state(prev_state)
         prev_output = core_state[0]
@@ -124,17 +118,13 @@ class AttentionNet(nn.Module):
         # ---------------------------------
         # NOTE: T = 1 when 'act'ing and T > 1 when 'learn'ing.
         
-        A_list = []
-        Old_A_list = []
         
-        for K_t, V_t, prev_reward_t, prev_action_t, nd_t, Me_t, Enemies_t in zip(
-            K.unbind(),
+        for K_t, V_t, prev_reward_t, prev_action_t, nd_t in zip(            K.unbind(),
             V.unbind(),
             prev_reward.unbind(),
             prev_action.unbind(),
             notdone.unbind(),
-            inputs['Me'].unbind(),
-            inputs['Enemies'].unbind(),
+
         ):
 
             # A. Queries.
@@ -151,15 +141,6 @@ class AttentionNet(nn.Module):
             A = torch.matmul(K_t, Q_t.transpose(2, 1).unsqueeze(1))
             # -> [B, h, w, num_queries]
             A = spatial_softmax(A)
-            
-            Old_A_list.append(A)
-            
-            A = torch.cat([A, Me_t, Enemies_t], dim = -1)
-            A = self.attention_mix(A.permute(0, 3, 1, 2))
-            A = A.permute(0, 2, 3, 1)
-            A = spatial_softmax(A)
-            
-            A_list.append(A)
             
             
             # [B, h, w, num_queries] x [B, h, w, num_values] -> [B, num_queries, num_values]
@@ -187,8 +168,7 @@ class AttentionNet(nn.Module):
         next_core_state = core_state
         # -> [T * B, hidden_size]
         output = torch.cat(core_output_list, dim=0)
-        A_output = torch.cat(A_list, dim=0)
-        Old_A_output = torch.cat(Old_A_list, dim=0)
+
         # 4. Outputs.
         # --------------
         # [T * B, hidden_size] -> [T * B, num_actions]
@@ -215,7 +195,7 @@ class AttentionNet(nn.Module):
         # Create tuple of next states.
         next_state = next_core_state + next_vision_state
         return (
-            dict(policy_logits=policy_logits, baseline=baseline, action=action, model_attention=A_output, old_attention=Old_A_output),
+            dict(policy_logits=policy_logits, baseline=baseline, action=action),
             next_state,
         )
 

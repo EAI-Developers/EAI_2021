@@ -14,13 +14,9 @@
 """The environment class for MonoBeast."""
 
 import torch
-import cv2 as cv
-from torchbeast.core.pre_attention import get_pre_map
-import numpy as np
+
 
 def _format_frame(frame):
-    frame = np.transpose(cv.resize(np.transpose(frame, (1,2,0)), (160, 210)), (2,0,1))
-    # print(frame.shape)
     frame = torch.from_numpy(frame)
     return frame.view((1, 1) + frame.shape)  # (...) -> (T,B,...).
 
@@ -39,8 +35,7 @@ class Environment:
         self.episode_step = torch.zeros(1, 1, dtype=torch.int32)
         initial_done = torch.ones(1, 1, dtype=torch.uint8)
         initial_frame = _format_frame(self.gym_env.reset())
-        #initial_frame = torch.ByteTensor(cv.resize(initial_frame[0][0].permute(1,2,0).numpy(), (160, 210), interpolation = cv.INTER_AREA)).permute(2, 0, 1).reshape(1,1, -1)
-        Res = get_pre_map(initial_frame)
+
         return dict(
             frame=initial_frame,
             reward=initial_reward,
@@ -48,8 +43,6 @@ class Environment:
             episode_return=self.episode_return,
             episode_step=self.episode_step,
             last_action=initial_last_action,
-            Enemies = torch.FloatTensor(Res['Enemies']),
-            Me = torch.FloatTensor(Res['Me']),
         )
 
     def step(self, action):
@@ -66,7 +59,7 @@ class Environment:
         frame = _format_frame(frame)
         reward = torch.tensor(reward).view(1, 1)
         done = torch.tensor(done).view(1, 1)
-        Res = get_pre_map(frame)
+
 
         return dict(
             frame=frame,
@@ -75,8 +68,6 @@ class Environment:
             episode_return=episode_return,
             episode_step=episode_step,
             last_action=action,
-            Enemies = torch.FloatTensor(Res['Enemies']),
-            Me = torch.FloatTensor(Res['Me']),
         )
 
     def close(self):
