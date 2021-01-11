@@ -141,10 +141,11 @@ class AttentionNet(nn.Module):
             A = torch.matmul(K_t, Q_t.transpose(2, 1).unsqueeze(1))
             # -> [B, h, w, num_queries]
             A = spatial_softmax(A)
+            A_blind = torch.ones_like(A)
             
             
             # [B, h, w, num_queries] x [B, h, w, num_values] -> [B, num_queries, num_values]
-            answers = apply_attention(A, V_t)
+            answers = apply_attention(A_blind, V_t)
 
             # -> [B, Z = {num_values * num_queries + num_keys * num_queries + 1 + num_actions}]
             chunks = list(
