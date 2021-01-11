@@ -123,7 +123,6 @@ class AttentionNet(nn.Module):
             prev_reward.unbind(),
             prev_action.unbind(),
             notdone.unbind(),
-
             ):
 
             # A. Queries.
