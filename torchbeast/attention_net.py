@@ -36,7 +36,7 @@ class AttentionNet(nn.Module):
         self.c_v, self.c_k, self.c_s, self.num_queries = c_v, c_k, c_s, num_queries
         self.num_keys = c_k + c_s
         self.num_values = c_v + c_s
-                
+
         # This is a function of the CNN hp and the input image size.
         self.height, self.width = 27, 20
 
@@ -98,7 +98,7 @@ class AttentionNet(nn.Module):
         core_output_list = []
         core_state = splice_core_state(prev_state)
         prev_output = core_state[0]
-        
+
         # [N, h, w, num_keys] -> [T, B, h, w, num_keys]
         K = K.view(T, B, h, w, -1)
         # [N, h, w, num_values] -> [T, B, h, w, num_values]
@@ -117,15 +117,14 @@ class AttentionNet(nn.Module):
         # 3. Operate over the T time steps.
         # ---------------------------------
         # NOTE: T = 1 when 'act'ing and T > 1 when 'learn'ing.
-        
-        
-        for K_t, V_t, prev_reward_t, prev_action_t, nd_t in zip(            K.unbind(),
+
+        for K_t, V_t, prev_reward_t, prev_action_t, nd_t in zip(K.unbind(),
             V.unbind(),
             prev_reward.unbind(),
             prev_action.unbind(),
             notdone.unbind(),
 
-        ):
+            ):
 
             # A. Queries.
             # --------------
@@ -142,8 +141,7 @@ class AttentionNet(nn.Module):
             # -> [B, h, w, num_queries]
             A = spatial_softmax(A)
             A_blind = torch.ones_like(A)
-            
-            
+
             # [B, h, w, num_queries] x [B, h, w, num_values] -> [B, num_queries, num_values]
             answers = apply_attention(A_blind, V_t)
 
@@ -164,7 +162,8 @@ class AttentionNet(nn.Module):
             core_state = tuple((nd_t * s) for s in core_state)
 
             # -> [B, hidden_size]
-            prev_output, _ = core_state = self.policy_core(core_input, core_state)
+            prev_output, _ = core_state = self.policy_core(
+                core_input, core_state)
             core_output_list.append(prev_output)
         next_core_state = core_state
         # -> [T * B, hidden_size]
@@ -200,16 +199,20 @@ class AttentionNet(nn.Module):
             next_state,
         )
 
+
 class VisionNetwork(nn.Module):
     def __init__(self):
         super(VisionNetwork, self).__init__()
         self.cnn = nn.Sequential(
             # NOTE: The padding choices were not in the paper details, but result in the sizes
             # mentioned by the authors. We should review these.
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=8, stride=4, padding=(1,2)),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2, padding=(2,1)),
+            nn.Conv2d(in_channels=3, out_channels=32,
+                      kernel_size=8, stride=4, padding=(1, 2)),
+            nn.Conv2d(in_channels=32, out_channels=64,
+                      kernel_size=4, stride=2, padding=(2, 1)),
         )
-        self.lstm = ConvLSTMCell(input_channels=64, hidden_channels=128, kernel_size=3)
+        self.lstm = ConvLSTMCell(
+            input_channels=64, hidden_channels=128, kernel_size=3)
 
     def forward(self, X, inputs, vision_lstm_state):
         T, B, *_ = X.size()
@@ -265,10 +268,12 @@ class SpatialBasis:
         h, w, d = height, width, channels
 
         p_h = torch.mul(
-            torch.arange(1, h + 1).unsqueeze(1).float(), torch.ones(1, w).float()
+            torch.arange(
+                1, h + 1).unsqueeze(1).float(), torch.ones(1, w).float()
         ) * (np.pi / h)
         p_w = torch.mul(
-            torch.ones(h, 1).float(), torch.arange(1, w + 1).unsqueeze(0).float()
+            torch.ones(h, 1).float(), torch.arange(
+                1, w + 1).unsqueeze(0).float()
         ) * (np.pi / w)
 
         # TODO: I didn't quite see how U,V = 4 made sense given that the authors form the spatial
@@ -278,7 +283,8 @@ class SpatialBasis:
         u_basis = v_basis = torch.arange(1, U + 1).unsqueeze(0).float()
         a = torch.mul(p_h.unsqueeze(2), u_basis)
         b = torch.mul(p_w.unsqueeze(2), v_basis)
-        out = torch.einsum("hwu,hwv->hwuv", torch.cos(a), torch.cos(b)).reshape(h, w, d)
+        out = torch.einsum("hwu,hwv->hwuv", torch.cos(a),
+                           torch.cos(b)).reshape(h, w, d)
         self.S = out
 
     def __call__(self, X):
@@ -295,7 +301,7 @@ def spatial_softmax(A):
     that has been normalized across its "spatial" dimension `h` and `w`.
 
     .. math::
-    
+
         A^q_{h,w} = exp(A^c_{h,w}) / \sum_{h',w'} A^q_{h',w'}
 
     Thus, each channel is operated upon separately, and no special meaning is 
@@ -315,9 +321,9 @@ def apply_attention(A, V):
 
     Ignoring batches the operation produces a tensor of shape [num_queries, num_values]
     and follows the following equation:
-    
+
     .. math::
-    
+
         out_{q,v} = \sum_{h,w} A^q_{h,w} * V^v_{h,w}
 
     Parameters
@@ -346,11 +352,11 @@ def splice_core_state(state: Tuple) -> Tuple:
 def splice_vision_state(state: Tuple) -> Tuple:
     return state[2], state[3]
 
-  
+
 class ConvLSTMCell(nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size):
         """Initialize stateful ConvLSTM cell.
-        
+
         Parameters
         ----------
         input_channels : ``int``
@@ -359,11 +365,11 @@ class ConvLSTMCell(nn.Module):
             Number of channels of hidden state.
         kernel_size : ``int``
             Size of the convolutional kernel.
-            
+
         Paper
         -----
         https://papers.nips.cc/paper/5955-convolutional-lstm-network-a-machine-learning-approach-for-precipitation-nowcasting.pdf
-        
+
         Referenced code
         ---------------
         https://github.com/automan000/Convolution_LSTM_PyTorch/blob/master/convolution_lstm.py        
