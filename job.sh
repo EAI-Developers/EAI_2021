@@ -8,6 +8,8 @@ mkdir -p ./logs/
 mkdir -p ./runs/
 mkdir -p ./output/
 
+# change
+
 CUDA_VISIBLE_DEVICES=2 \
 python -m torchbeast.monobeast \
        # --env MsPacmanNoFrameskip-v4 \
