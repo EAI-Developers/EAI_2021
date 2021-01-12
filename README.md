@@ -1,6 +1,8 @@
 # Towards Interpretable Reinforcement Learning Using Attention Augmented Agents
 This fork is an reimplementation of Mott, 2019 for the NeurIPS reproducibility challenge. We use this repo instead of IMPALA, to compare across frameworks.
 
+no-attention: set attention to 1
+
 ```shell
 python -m torchbeast.monobeast
 ./job.sh   # or with Mott, 2019 hyperparameters (I think)
