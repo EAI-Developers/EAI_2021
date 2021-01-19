@@ -37,7 +37,7 @@ class AttentionNet(nn.Module):
         self.num_keys = c_k + c_s
         self.num_values = c_v + c_s
         
-        self.attention_mix = nn.Conv2d(6, 4, kernel_size=(1,1), stride=1)
+        self.attention_mix = nn.Conv2d(6, 4, kernel_size=(3,3), stride=1, padding=1)
         
         # This is a function of the CNN hp and the input image size.
         self.height, self.width = 27, 20
@@ -127,7 +127,7 @@ class AttentionNet(nn.Module):
         A_list = []
         Old_A_list = []
         
-        for K_t, V_t, prev_reward_t, prev_action_t, nd_t, Me_t, Enemies_t in zip(
+        for K_t, V_t, prev_reward_t, prev_action_t, nd_t, Me_t, Enemies_t, All_t, E1_t, E2_t, E3_t, E4_t in zip(
             K.unbind(),
             V.unbind(),
             prev_reward.unbind(),
@@ -135,6 +135,11 @@ class AttentionNet(nn.Module):
             notdone.unbind(),
             inputs['Me'].unbind(),
             inputs['Enemies'].unbind(),
+            inputs['All'].unbind(),
+            inputs['E1'].unbind(),
+            inputs['E2'].unbind(),
+            inputs['E3'].unbind(),
+            inputs['E4'].unbind(),
         ):
 
             # A. Queries.
@@ -154,6 +159,9 @@ class AttentionNet(nn.Module):
             
             Old_A_list.append(A)
             
+            '''cat需要修改两份'''
+            #A = torch.cat([A, All_t], dim = -1)
+            #A = torch.cat([A, Me_t, E1_t, E2_t, E3_t, E4_t], dim = -1)
             A = torch.cat([A, Me_t, Enemies_t], dim = -1)
             A = self.attention_mix(A.permute(0, 3, 1, 2))
             A = A.permute(0, 2, 3, 1)

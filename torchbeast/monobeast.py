@@ -313,6 +313,11 @@ def create_buffers(flags, obs_shape, num_actions) -> Buffers:
         # 干预attention
         Enemies=dict(size=(T + 1, 27, 20, 1), dtype=torch.float32),
         Me=dict(size=(T + 1, 27, 20, 1), dtype=torch.float32),
+        All=dict(size=(T + 1, 27, 20, 1), dtype=torch.float32),
+        E1=dict(size=(T + 1, 27, 20, 1), dtype=torch.float32),
+        E2=dict(size=(T + 1, 27, 20, 1), dtype=torch.float32),
+        E3=dict(size=(T + 1, 27, 20, 1), dtype=torch.float32),
+        E4=dict(size=(T + 1, 27, 20, 1), dtype=torch.float32),
         model_attention=dict(size=(T + 1, 27, 20, 4), dtype=torch.float32),
         old_attention=dict(size=(T + 1, 27, 20, 4), dtype=torch.float32),
     )

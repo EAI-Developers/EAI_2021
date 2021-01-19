@@ -50,6 +50,11 @@ class Environment:
             last_action=initial_last_action,
             Enemies = torch.FloatTensor(Res['Enemies']),
             Me = torch.FloatTensor(Res['Me']),
+            All = torch.FloatTensor(Res['All']),
+            E1 = torch.FloatTensor(Res['E1']),
+            E2 = torch.FloatTensor(Res['E2']),
+            E3 = torch.FloatTensor(Res['E3']),
+            E4 = torch.FloatTensor(Res['E4']),
         )
 
     def step(self, action):
@@ -77,6 +82,11 @@ class Environment:
             last_action=action,
             Enemies = torch.FloatTensor(Res['Enemies']),
             Me = torch.FloatTensor(Res['Me']),
+            All = torch.FloatTensor(Res['All']),
+            E1 = torch.FloatTensor(Res['E1']),
+            E2 = torch.FloatTensor(Res['E2']),
+            E3 = torch.FloatTensor(Res['E3']),
+            E4 = torch.FloatTensor(Res['E4']),
         )
 
     def close(self):
