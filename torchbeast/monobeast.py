@@ -348,6 +348,7 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
     env = create_env(flags)
 
     model = Net(num_actions=env.action_space.n)
+    model_test = Net(num_actions=env.action_space.n)
     buffers = create_buffers(flags, env.observation_space.shape, model.num_actions)
 
     model.share_memory()
@@ -494,6 +495,13 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
                 # Save step model every 10% of the way during training.
                 checkpoint_step(start_step)
             
+            model_test.load_state_dict(model.state_dict())
+            if start_step % (T * B) < T * B:
+                print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                tmp = {}
+                tmp['test_step'] = start_step
+                tmp['mean_test'], tmp['std_test'] = test_1(flags, model_test)
+                plogger.log(tmp)
  
             sps = (step - start_step) / (timer() - start_time)
             if stats.get("episode_returns", None):
@@ -526,7 +534,35 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
     checkpoint()
     plogger.close()
 
-
+def test_1(flags, model, num_episodes: int = 10):
+    gym_env = create_env(flags)
+    env = environment.Environment(gym_env)
+    # model.eval()
+    
+    observation = env.initial()
+    returns = []
+    hidden_state = model.initial_state(batch_size=1)
+    
+    while len(returns) < num_episodes:
+        if flags.mode == "test_render":
+            env.gym_env.render()
+        # print(observation.keys())
+        agent_outputs, new_hidden_state = model(observation, hidden_state)
+        hidden_state = new_hidden_state
+        policy_outputs = agent_outputs
+        observation = env.step(policy_outputs["action"])
+        if observation["done"].item():
+            returns.append(observation["episode_return"].item())
+            logging.info(
+                "Episode ended after %d steps. Return: %.1f",
+                observation["episode_step"].item(),
+                observation["episode_return"].item(),
+            )
+            hidden_state = model.initial_state(batch_size=1)
+            
+    env.close()
+    return np.mean(returns), np.std(returns)
+  
 def test(flags, num_episodes: int = 10):
     if flags.xpid is None:
         checkpointpath = "./latest/model.tar"
